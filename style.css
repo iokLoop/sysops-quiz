@@ -353,6 +353,142 @@ a { color: var(--accent); text-decoration: none; }
 .result-exp.visible { display: block; }
 
 /* ============================================================
+   PAUSE OVERLAY
+   ============================================================ */
+.quiz-overlay {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(13,17,23,.88);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+}
+.resume-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 48px 56px;
+  text-align: center;
+}
+.resume-card h2 { font-size: 24px; margin-bottom: 8px; }
+.resume-card p  { color: var(--muted); margin-bottom: 24px; font-size: 15px; }
+
+.pause-btn { font-size: 15px; min-width: 36px; padding: 6px 10px; }
+.pause-btn.paused { background: var(--unanswered); border-color: var(--unanswered); color: #0d1117; }
+
+/* ============================================================
+   PERM QUESTIONS
+   ============================================================ */
+.perm-card { }
+.perm-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  background: rgba(63,185,80,.15); color: var(--c-lin);
+  border: 1px solid var(--c-lin); border-radius: 4px;
+  padding: 1px 6px; text-transform: uppercase;
+}
+.perm-grid { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.perm-header-row,
+.perm-row {
+  display: grid;
+  grid-template-columns: 72px 56px 56px 56px;
+  align-items: center; gap: 4px;
+}
+.perm-group-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.perm-bit-header  { font-size: 13px; color: var(--muted); text-align: center; font-weight: 700; }
+
+.perm-btn {
+  height: 42px; width: 52px;
+  border: 1.5px solid var(--border); border-radius: 6px;
+  background: var(--bg3); color: var(--muted);
+  font-size: 17px; font-weight: 700;
+  cursor: pointer; transition: all .12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.perm-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.08); }
+.perm-btn.active  { border-color: var(--accent); background: rgba(88,166,255,.18); color: var(--text); }
+.perm-btn.perm-correct { border-color: var(--correct) !important; background: rgba(46,160,67,.25) !important; color: var(--correct) !important; }
+.perm-btn.perm-wrong   { border-color: var(--wrong)   !important; background: rgba(248,81,73,.25)  !important; color: var(--wrong)   !important; }
+.perm-btn.perm-missed  { border-color: var(--unanswered) !important; background: rgba(210,153,34,.15) !important; color: var(--unanswered) !important; }
+.perm-btn:disabled { cursor: default; }
+
+/* ============================================================
+   OSI TABLE
+   ============================================================ */
+.osi-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  background: rgba(31,111,235,.15); color: var(--c-net);
+  border: 1px solid var(--c-net); border-radius: 4px;
+  padding: 1px 6px; text-transform: uppercase;
+}
+
+.osi-table {
+  border: 1px solid var(--border); border-radius: 6px;
+  overflow: hidden; margin-bottom: 14px;
+}
+
+.osi-row {
+  display: grid;
+  grid-template-columns: 36px 90px 1fr 1fr;
+  align-items: center; gap: 0;
+  border-bottom: 1px solid rgba(48,54,61,.5);
+}
+.osi-row:last-child { border-bottom: none; }
+
+.osi-header-row {
+  background: var(--bg3);
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px;
+}
+
+/* TCP/IP color groups — muted on dark theme */
+.osi-app       { background: rgba(46,160,67,.08); }
+.osi-transport { background: rgba(88,166,255,.08); }
+.osi-internet  { background: rgba(210,153,34,.08); }
+.osi-netaccess { background: rgba(248,81,73,.08); }
+
+.osi-col-num, .osi-col-word, .osi-col-input, .osi-col-tcpip {
+  padding: 8px 10px;
+}
+.osi-col-num  {
+  font-size: 13px; font-weight: 700; color: var(--accent);
+  border-right: 1px solid rgba(48,54,61,.5);
+  text-align: center;
+}
+.osi-col-word {
+  font-size: 13px; font-style: italic; color: var(--text);
+  border-right: 1px solid rgba(48,54,61,.5);
+}
+.osi-col-input {
+  display: flex; align-items: center; gap: 8px;
+  border-right: 1px solid rgba(48,54,61,.5);
+}
+.osi-col-tcpip {
+  display: flex; align-items: center; gap: 8px;
+}
+.osi-input-tcpip { font-size: 12px; }
+
+/* Text input */
+.osi-input {
+  flex: 1; min-width: 0;
+  background: transparent; border: none; outline: none;
+  color: var(--text); font-size: 13px; font-family: inherit;
+  padding: 2px 0;
+  border-bottom: 1px dashed var(--border);
+  transition: border-color .15s;
+}
+.osi-input::placeholder { color: var(--muted); font-style: italic; }
+.osi-input:focus { border-bottom-color: var(--accent); }
+.osi-input:disabled { opacity: 1; }
+.osi-input.osi-input-correct { color: var(--correct) !important; border-bottom-color: var(--correct); font-weight: 600; }
+.osi-input.osi-input-wrong   { color: var(--wrong)   !important; border-bottom-color: var(--wrong); }
+
+.osi-answer-reveal {
+  font-size: 12px; font-weight: 600; color: var(--correct);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .osi-row { grid-template-columns: 32px 72px 1fr; }
+  .osi-col-tcpip { display: none; }
+}
+
+/* ============================================================
    ANIMATIONS
    ============================================================ */
 @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }

@@ -441,6 +441,38 @@ const Q = [
     q:'TTL (Time To Live) in DNS and IP routing — correct explanation?',
     o:['DNS TTL and IP TTL both measure time in seconds until expiration — same concept','DNS TTL defines how long a resolver caches a record; IP TTL is a hop counter that causes packet discard when it reaches zero','TTL only exists in DNS; IP routing has no TTL concept','IP TTL is set by the DNS server; DNS TTL is set by the router'],
     a:1, x:'Two very different concepts sharing a name: (1) DNS TTL: set by domain owner in the zone file, tells resolvers how long to cache. Low TTL = fast updates, high DNS traffic. (2) IP TTL: OS sets initial value (Windows=128, Linux=64), each router decrements by 1. Traceroute exploits TTL expiry to map hops.' },
+  { id:'url_order', type:'order', cat:'web',
+    q:'What happens when you type a URL? — Write the correct step number (1–26) next to each event. Steps are in random order.',
+    steps:[
+      { n:17, t:'Browser sends final ACK — TCP 3-way handshake complete' },
+      { n:6,  t:'Root nameserver responds with address of the TLD nameserver (.com / .net…)' },
+      { n:25, t:'Browser parses HTML; discovers and fetches additional resources (CSS, JS, images)' },
+      { n:11, t:'IP address cached in local DNS cache with TTL; browser now has destination IP' },
+      { n:23, t:'Server processes the request and generates HTTP 200 OK response' },
+      { n:3,  t:'OS checks the local hosts file (/etc/hosts or C:\\Windows\\System32\\drivers\\etc\\hosts)' },
+      { n:19, t:'Server sends TLS Certificate + Server Hello back to browser' },
+      { n:14, t:'Packets routed hop-by-hop across the internet (each router strips/re-adds L2 header)' },
+      { n:8,  t:'TLD nameserver responds with address of the authoritative nameserver for the domain' },
+      { n:21, t:'Symmetric session keys derived via asymmetric crypto; encrypted HTTPS channel ready' },
+      { n:1,  t:'User types the URL in the browser address bar and presses Enter' },
+      { n:15, t:'TCP 3-way handshake begins: browser sends SYN to server IP:443' },
+      { n:9,  t:'Resolver queries the authoritative nameserver for the specific domain' },
+      { n:26, t:'Browser renders the complete webpage (DOM, CSSOM, layout, paint)' },
+      { n:4,  t:'OS sends DNS query to the configured DNS resolver/server (if no local cache hit)' },
+      { n:18, t:'TLS Handshake: browser sends Client Hello (supported cipher suites, TLS version, random)' },
+      { n:12, t:'ARP resolves next-hop (gateway) MAC address — no IP-to-MAC mapping yet' },
+      { n:7,  t:'Resolver queries the TLD nameserver' },
+      { n:2,  t:'Browser checks its own local DNS cache for the IP address of the domain' },
+      { n:20, t:'Browser validates the TLS certificate against trusted Certificate Authorities (CAs)' },
+      { n:13, t:'Data encapsulated down the stack: App → TCP segment → IP packet → Ethernet frame' },
+      { n:24, t:'Response travels back to browser; browser decrypts and decapsulates data' },
+      { n:16, t:'Server responds with SYN-ACK' },
+      { n:5,  t:'DNS recursive resolver queries the root nameservers (".")' },
+      { n:22, t:'Browser sends encrypted HTTP GET request to the server' },
+      { n:10, t:'Authoritative nameserver returns the IP address for the domain to the resolver' },
+    ],
+    x:'Full URL flow: DNS resolution (1-11) → ARP + encapsulation (12-14) → TCP handshake SYN/SYN-ACK/ACK (15-17) → TLS handshake (18-21) → HTTP GET/response (22-24) → parse + render (25-26). Key ports: HTTPS=443, HTTP=80, DNS=53, SSH=22, SMTP=25.' },
+
   { id:'p10', cat:'web',
     q:'What is the role of ARP during the web browsing process?',
     o:['ARP translates the server\'s domain name to its IP address','ARP resolves the default gateway\'s IP address to its MAC address — required to build the Ethernet frame to send the first packet','ARP establishes the TLS encrypted session with the web server','ARP is part of the TCP 3-way handshake'],
@@ -458,6 +490,7 @@ let state = {
   answers: {},       // id → option index
   permAnswers: {},   // id → [Set, Set, Set] for owner/group/others
   osiAnswers: {},    // id → { "7": "Application", ... }
+  orderAnswers: {},  // id → { idx → typed number string }
   timer: 0,
   timerHandle: null,
   paused: false,
@@ -554,7 +587,8 @@ function countAnswered() {
   let n = Object.keys(state.answers).length;
   Q.forEach(q => {
     if (q.type === 'perm' && state.permAnswers[q.id]) n++;
-    if (q.type === 'osi'  && state.osiAnswers[q.id] && Object.keys(state.osiAnswers[q.id]).length > 0) n++;
+    if (q.type === 'osi'   && state.osiAnswers[q.id]   && Object.keys(state.osiAnswers[q.id]).length > 0) n++;
+    if (q.type === 'order' && state.orderAnswers[q.id] && Object.keys(state.orderAnswers[q.id]).length > 0) n++;
   });
   return n;
 }
@@ -735,6 +769,44 @@ function renderOsiCard(q, globalIdx) {
 }
 
 // ============================================================
+// RENDER ORDER CARD
+// ============================================================
+function renderOrderCard(q, globalIdx) {
+  const items = q.steps.map((step, i) => `
+    <div class="order-row" id="order-row-${q.id}-${i}">
+      <input class="order-num-input" type="number" min="1" max="${q.steps.length}"
+        data-qid="${q.id}" data-idx="${i}"
+        placeholder="?"
+        autocomplete="off">
+      <div class="order-step-text">${step.t}</div>
+      <span class="order-reveal" id="order-reveal-${q.id}-${i}"></span>
+    </div>`).join('');
+
+  return `
+<div class="q-card order-card" id="card-${q.id}" data-id="${q.id}">
+  <div class="q-header">
+    ${badge(q.cat)}
+    <span class="q-num">Q${globalIdx+1}</span>
+    <span class="order-tag">ORDER</span>
+    <span class="q-status" id="status-${q.id}"></span>
+  </div>
+  <div class="q-text">${q.q}</div>
+  <div class="order-list">${items}</div>
+  <div class="explanation" id="exp-${q.id}"><strong>Explanation:</strong> ${q.x}</div>
+</div>`;
+}
+
+function handleOrderInput(input) {
+  if (state.evaluated || state.paused) return;
+  const { qid, idx } = input.dataset;
+  if (!state.orderAnswers[qid]) state.orderAnswers[qid] = {};
+  state.orderAnswers[qid][idx] = input.value;
+  // visual: highlight when filled
+  input.classList.toggle('filled', input.value !== '');
+  updateProgress();
+}
+
+// ============================================================
 // RENDER QUIZ
 // ============================================================
 function renderQuiz() {
@@ -742,6 +814,7 @@ function renderQuiz() {
   state.answers = {};
   state.permAnswers = {};
   state.osiAnswers = {};
+  state.orderAnswers = {};
   state.evaluated = false;
   state.showAnswers = false;
 
@@ -749,8 +822,9 @@ function renderQuiz() {
     const qs = Q.filter(q => q.cat === cat);
     const items = qs.map(q => {
       const globalIdx = Q.indexOf(q);
-      if (q.type === 'perm') return renderPermCard(q, globalIdx);
-      if (q.type === 'osi')  return renderOsiCard(q, globalIdx);
+      if (q.type === 'perm')  return renderPermCard(q, globalIdx);
+      if (q.type === 'osi')   return renderOsiCard(q, globalIdx);
+      if (q.type === 'order') return renderOrderCard(q, globalIdx);
       return `
 <div class="q-card" id="card-${q.id}" data-id="${q.id}">
   <div class="q-header">
@@ -990,6 +1064,46 @@ function evaluate() {
       return;
     }
 
+    if (q.type === 'order') {
+      const ordAns = state.orderAnswers[q.id] || {};
+      const isUnans = Object.keys(ordAns).length === 0;
+      let correctCount = 0;
+      q.steps.forEach((step, i) => {
+        const input = document.querySelector(`.order-num-input[data-qid="${q.id}"][data-idx="${i}"]`);
+        const typed = parseInt(input ? input.value : (ordAns[String(i)] || ''), 10);
+        const isOk = typed === step.n;
+        if (isOk) correctCount++;
+        if (input) {
+          input.disabled = true;
+          input.classList.remove('filled');
+          input.classList.add(isOk ? 'order-correct' : 'order-wrong');
+        }
+        const reveal = document.getElementById(`order-reveal-${q.id}-${i}`);
+        if (reveal && !isOk) reveal.textContent = step.n;
+      });
+      const allCorrect = correctCount === q.steps.length;
+      if (!results.orderResults) results.orderResults = {};
+      results.orderResults[q.id] = { correct: correctCount, total: q.steps.length };
+
+      if (isUnans) {
+        results.unanswered.push(q.id);
+        if (card) card.classList.add('unans');
+        if (statusEl) statusEl.textContent = '⚪';
+      } else if (allCorrect) {
+        results.score++;
+        results.perCat[q.cat].correct++;
+        if (card) card.classList.add('correct');
+        if (statusEl) statusEl.textContent = '✅';
+      } else {
+        results.wrong.push(q.id);
+        if (card) card.classList.add('wrong');
+        if (statusEl) statusEl.textContent = `${correctCount}/${q.steps.length}`;
+      }
+      const expElOrd = document.getElementById(`exp-${q.id}`);
+      if (expElOrd && !allCorrect) expElOrd.classList.add('visible');
+      return;
+    }
+
     // Regular question
     const opts = document.querySelectorAll(`.option[data-id="${q.id}"]`);
     opts.forEach(o => o.classList.add('disabled'));
@@ -1081,7 +1195,15 @@ function renderResults() {
   const questionList = Q.map((q, qi) => {
     let isCorrect, isUnans, detail = '';
 
-    if (q.type === 'osi') {
+    if (q.type === 'order') {
+      isUnans   = !state.orderAnswers[q.id] || Object.keys(state.orderAnswers[q.id]).length === 0;
+      const res = r.orderResults && r.orderResults[q.id];
+      isCorrect = res && res.correct === res.total;
+      if (!isCorrect && res) {
+        detail += `<div class="result-correct-ans">✅ ${res.correct}/${res.total} steps in correct position</div>`;
+        if (isUnans) detail += `<div class="result-your-ans">⚪ Not answered</div>`;
+      }
+    } else if (q.type === 'osi') {
       isUnans   = !state.osiAnswers[q.id] || Object.keys(state.osiAnswers[q.id]).length === 0;
       const res = r.osiResults && r.osiResults[q.id];
       isCorrect = res && res.correct === res.total;
@@ -1258,8 +1380,10 @@ document.addEventListener('click', e => {
 // OSI INPUT LISTENER
 // ============================================================
 document.addEventListener('input', e => {
-  const input = e.target.closest('.osi-input[data-qid]');
-  if (input) handleOsiInput(input);
+  const osiInput   = e.target.closest('.osi-input[data-qid]');
+  if (osiInput) { handleOsiInput(osiInput); return; }
+  const orderInput = e.target.closest('.order-num-input[data-qid]');
+  if (orderInput) handleOrderInput(orderInput);
 });
 
 // ============================================================

@@ -489,6 +489,48 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 /* ============================================================
+   ORDER EXERCISE
+   ============================================================ */
+.order-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  background: rgba(188,140,255,.15); color: var(--c-web);
+  border: 1px solid var(--c-web); border-radius: 4px;
+  padding: 1px 6px; text-transform: uppercase;
+}
+.order-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.order-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 32px;
+  align-items: center; gap: 10px;
+  padding: 5px 2px;
+  border-bottom: 1px solid rgba(48,54,61,.35);
+}
+.order-row:last-child { border-bottom: none; }
+
+.order-num-input {
+  width: 52px; height: 46px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border); border-radius: 8px;
+  color: var(--muted);
+  font-size: 22px; font-weight: 800;
+  text-align: center; font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  transition: all .15s;
+  -moz-appearance: textfield;
+}
+.order-num-input::-webkit-inner-spin-button,
+.order-num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.order-num-input::placeholder { font-size: 18px; font-weight: 400; color: var(--border); }
+.order-num-input:focus { outline: none; border-color: var(--accent); }
+.order-num-input.filled       { color: var(--accent); border-color: var(--accent); background: rgba(88,166,255,.08); }
+.order-num-input.order-correct{ color: var(--correct) !important; border-color: var(--correct) !important; background: rgba(46,160,67,.12) !important; }
+.order-num-input.order-wrong  { color: var(--wrong)   !important; border-color: var(--wrong)   !important; background: rgba(248,81,73,.10) !important; }
+.order-num-input:disabled { cursor: default; }
+
+.order-step-text { font-size: 13px; line-height: 1.45; color: var(--text); }
+.order-reveal    { font-size: 13px; font-weight: 800; color: var(--correct); text-align: center; }
+
+/* ============================================================
    ANIMATIONS
    ============================================================ */
 @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
